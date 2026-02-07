@@ -1,0 +1,9 @@
+[sources.app_logs]
+type = "file"
+include = ["/logs/*.log"]
+ignore_older = 86400
+
+[sinks.console]
+type = "console"
+inputs = ["app_logs"]
+encoding.codec = "text"

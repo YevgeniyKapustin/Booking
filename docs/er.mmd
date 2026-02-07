@@ -1,0 +1,26 @@
+erDiagram
+  table {
+  name VARCHAR(64)
+  seats INTEGER
+  id INTEGER PK
+  }
+  usr {
+  email VARCHAR(256)
+  hashed_password VARCHAR
+  full_name VARCHAR
+  phone_number VARCHAR(32)
+  is_admin BOOLEAN
+  created_at DATETIME
+  id INTEGER PK
+  }
+  booking {
+  user_id INTEGER
+  table_id INTEGER
+  start_time DATETIME
+  end_time DATETIME
+  status VARCHAR(8)
+  created_at DATETIME
+  id INTEGER PK
+  }
+  table ||--o{ booking : table_id
+  usr ||--o{ booking : user_id
