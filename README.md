@@ -9,10 +9,10 @@
 docker compose up --build
 ```
 
-- API: `http://localhost:8000`.
-- Mailpit UI: `http://localhost:8025`.
-- Prometheus: `http://localhost:9090`.
-- Grafana: `http://localhost:3000` (admin/admin).
+- API: http://localhost:8000.
+- Mailpit UI: http://localhost:8025.
+- Prometheus: http://localhost:9090.
+- Grafana: http://localhost:3000 (admin/admin).
 
 ## Migrations and Initial Data
 On container start `scripts/start.sh` does:
@@ -27,14 +27,27 @@ Admin defaults (can be overridden via env):
 
 ## Logging and Monitoring
 - Vector tails `./logs/*.log` and prints them to its stdout.
-- Prometheus scrapes `http://api:8000/metrics`.
+- Prometheus scrapes http://api:8000/metrics.
 - Grafana is preconfigured with the Prometheus datasource.
 
 ## Email Notifications
 - Notifications are sent via Celery tasks (see `src/tasks/tasks.py`).
 - Welcome email: sent after successful user registration.
 - Booking reminder: scheduled 24 hours before booking start time. If the booking is less than 24 hours away, the reminder is not scheduled.
-- Results can be seen in Mailpit: `http://localhost:8025`.
+- Results can be seen in Mailpit: http://localhost:8025.
+
+## Tests
+- Unit tests:
+
+```bash
+poetry run pytest tests/test_services.py
+```
+
+- Integration tests (SQLite + httpx):
+
+```bash
+poetry run pytest tests/integration
+```
 
 ## ER Diagram
 Generate ER diagram (Mermaid format):
@@ -51,17 +64,5 @@ Generate ER diagram PNG (via mermaid-cli Docker image):
 poetry run python scripts/generate_er_png.py
 ```
 Output: `docs/er.png`.
+
 ![ER diagram](docs/er.png)
-
-## Tests
-- Unit tests:
-
-```bash
-poetry run pytest tests/test_services.py
-```
-
-- Integration tests (SQLite + httpx):
-
-```bash
-poetry run pytest tests/integration
-```
