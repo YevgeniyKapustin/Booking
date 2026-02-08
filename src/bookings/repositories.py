@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from src.bookings.models import Booking, BookingStatus
+from src.core.time_utils import utc_now
 
 
 class BookingRepository:
@@ -20,7 +21,7 @@ class BookingRepository:
         return result.scalar_one_or_none()
 
     async def list_future_for_user(self, user_id: int) -> list[Booking]:
-        now = datetime.now()
+        now = utc_now()
         result = await self.session.execute(
             select(Booking)
             .where(Booking.user_id == user_id)

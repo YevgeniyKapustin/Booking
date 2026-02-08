@@ -23,8 +23,8 @@ class BookingStatus(StrEnum):
 class Booking(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("usr.id"), index=True)
     table_id: Mapped[int] = mapped_column(ForeignKey("table.id"), index=True)
-    start_time: Mapped[datetime] = mapped_column(DateTime, index=True)
-    end_time: Mapped[datetime] = mapped_column(DateTime)
+    start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     status: Mapped[BookingStatus] = mapped_column(
         Enum(
             BookingStatus,

@@ -4,6 +4,7 @@ from src.bookings.models import Booking
 from src.bookings.repositories import BookingRepository
 from src.core.errors import BusinessError, ForbiddenError, NotFoundError
 from src.core.logging_decorators import log_service
+from src.core.time_utils import combine_local, normalize_time, to_utc, utc_now
 from src.tables.repositories import TableRepository
 from src.tasks.tasks import send_booking_reminder
 
@@ -26,10 +27,12 @@ class BookingService:
         target_time: time,
     ) -> Booking:
         target_time = self._normalize_time(target_time)
-        start_time = datetime.combine(target_date, target_time)
-        end_time = start_time + timedelta(hours=2)
-        self._ensure_within_working_hours(start_time, end_time)
-        self._ensure_same_day(start_time, end_time)
+        local_start = combine_local(target_date, target_time)
+        local_end = local_start + timedelta(hours=2)
+        self._ensure_within_working_hours(local_start, local_end)
+        self._ensure_same_day(local_start, local_end)
+        start_time = to_utc(local_start)
+        end_time = to_utc(local_end)
         await self._ensure_table_exists(table_id)
         await self._ensure_slot_available(table_id, start_time, end_time)
         booking_id = await self.bookings.create(user_id, table_id, start_time, end_time)
@@ -53,10 +56,12 @@ class BookingService:
         if booking.user_id != user_id:
             raise ForbiddenError("You cannot modify this booking")
         target_time = self._normalize_time(target_time)
-        start_time = datetime.combine(target_date, target_time)
-        end_time = start_time + timedelta(hours=2)
-        self._ensure_within_working_hours(start_time, end_time)
-        self._ensure_same_day(start_time, end_time)
+        local_start = combine_local(target_date, target_time)
+        local_end = local_start + timedelta(hours=2)
+        self._ensure_within_working_hours(local_start, local_end)
+        self._ensure_same_day(local_start, local_end)
+        start_time = to_utc(local_start)
+        end_time = to_utc(local_end)
         await self._ensure_slot_available(
             booking.table_id, start_time, end_time, booking.id
         )
@@ -76,7 +81,7 @@ class BookingService:
 
     @staticmethod
     def _schedule_reminder(booking: Booking) -> None:
-        now = datetime.now()
+        now = utc_now()
         reminder_time = booking.start_time - timedelta(days=1)
         if reminder_time <= now:
             return
@@ -122,7 +127,7 @@ class BookingService:
 
     @staticmethod
     def _ensure_cancel_allowed(start_time: datetime) -> None:
-        now = datetime.now()
+        now = utc_now()
         if start_time - now < timedelta(hours=1):
             raise BusinessError(
                 "Booking cannot be canceled less than 1 hour before start"
@@ -130,6 +135,4 @@ class BookingService:
 
     @staticmethod
     def _normalize_time(target_time: time) -> time:
-        if target_time.tzinfo is None:
-            return target_time
-        return target_time.replace(tzinfo=None)
+        return normalize_time(target_time)

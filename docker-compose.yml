@@ -5,6 +5,7 @@ services:
       dockerfile: Dockerfile
     environment:
       APP_NAME: ${APP_NAME}
+      APP_TIMEZONE: ${APP_TIMEZONE}
       POSTGRES_HOST: ${POSTGRES_HOST}
       POSTGRES_PORT: ${POSTGRES_PORT}
       POSTGRES_DB: ${POSTGRES_DB}
@@ -61,6 +62,7 @@ services:
       dockerfile: Dockerfile
     environment:
       APP_NAME: ${APP_NAME}
+      APP_TIMEZONE: ${APP_TIMEZONE}
       POSTGRES_HOST: ${POSTGRES_HOST}
       POSTGRES_PORT: ${POSTGRES_PORT}
       POSTGRES_DB: ${POSTGRES_DB}

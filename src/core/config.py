@@ -5,6 +5,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
     app_name: str = "Booking"
+    app_timezone: str = "UTC"
     database_url: str = ""
     postgres_host: str = "localhost"
     postgres_port: int = 5432

@@ -2,6 +2,7 @@ from datetime import date, datetime, time, timedelta
 
 from src.core.errors import BusinessError, NotFoundError
 from src.core.logging_decorators import log_service
+from src.core.time_utils import combine_local, normalize_time, to_utc
 from src.tables.repositories import TableRepository
 
 
@@ -55,12 +56,14 @@ class TableService:
         seats: int | None = None,
     ):
         target_time = self._normalize_time(target_time)
-        start_time = datetime.combine(target_date, target_time)
-        end_time = start_time + timedelta(hours=2)
+        local_start = combine_local(target_date, target_time)
+        local_end = local_start + timedelta(hours=2)
 
-        self._ensure_within_working_hours(start_time, end_time)
-        self._ensure_same_day(start_time, end_time)
+        self._ensure_within_working_hours(local_start, local_end)
+        self._ensure_same_day(local_start, local_end)
 
+        start_time = to_utc(local_start)
+        end_time = to_utc(local_end)
         return await self.tables.get_available(start_time, end_time, seats)
 
     @staticmethod
@@ -78,6 +81,4 @@ class TableService:
 
     @staticmethod
     def _normalize_time(target_time: time) -> time:
-        if target_time.tzinfo is None:
-            return target_time
-        return target_time.replace(tzinfo=None)
+        return normalize_time(target_time)
