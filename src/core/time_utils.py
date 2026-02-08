@@ -1,4 +1,4 @@
-from datetime import date, datetime, time, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from src.core.config import settings
@@ -27,3 +27,19 @@ def to_utc(value: datetime) -> datetime:
 
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def is_past(value: datetime) -> bool:
+    return value < utc_now()
+
+
+def is_within_horizon(value: datetime, max_days_ahead: int) -> bool:
+    return value <= utc_now() + timedelta(days=max_days_ahead)
+
+
+def is_valid_slot_time(value: datetime, slot_minutes: int) -> bool:
+    return (
+        value.minute % slot_minutes == 0
+        and value.second == 0
+        and value.microsecond == 0
+    )

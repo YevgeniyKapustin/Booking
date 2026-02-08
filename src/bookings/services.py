@@ -2,9 +2,18 @@ from datetime import date, datetime, time, timedelta
 
 from src.bookings.models import Booking
 from src.bookings.repositories import BookingRepository
+from src.core.config import settings
 from src.core.errors import BusinessError, ForbiddenError, NotFoundError
 from src.core.logging_decorators import log_service
-from src.core.time_utils import combine_local, normalize_time, to_utc, utc_now
+from src.core.time_utils import (
+    combine_local,
+    is_past,
+    is_valid_slot_time,
+    is_within_horizon,
+    normalize_time,
+    to_utc,
+    utc_now,
+)
 from src.tables.repositories import TableRepository
 from src.tasks.tasks import send_booking_reminder
 
@@ -26,11 +35,7 @@ class BookingService:
         target_date: date,
         target_time: time,
     ) -> Booking:
-        target_time = self._normalize_time(target_time)
-        local_start = combine_local(target_date, target_time)
-        local_end = local_start + timedelta(hours=2)
-        self._ensure_within_working_hours(local_start, local_end)
-        self._ensure_same_day(local_start, local_end)
+        local_start, local_end = self._build_slot(target_date, target_time)
         start_time = to_utc(local_start)
         end_time = to_utc(local_end)
         await self._ensure_table_exists(table_id)
@@ -55,11 +60,7 @@ class BookingService:
             raise NotFoundError("Booking not found")
         if booking.user_id != user_id:
             raise ForbiddenError("You cannot modify this booking")
-        target_time = self._normalize_time(target_time)
-        local_start = combine_local(target_date, target_time)
-        local_end = local_start + timedelta(hours=2)
-        self._ensure_within_working_hours(local_start, local_end)
-        self._ensure_same_day(local_start, local_end)
+        local_start, local_end = self._build_slot(target_date, target_time)
         start_time = to_utc(local_start)
         end_time = to_utc(local_end)
         await self._ensure_slot_available(
@@ -114,8 +115,8 @@ class BookingService:
 
     @staticmethod
     def _ensure_within_working_hours(start_time: datetime, end_time: datetime) -> None:
-        open_time = time(12, 0)
-        close_time = time(22, 0)
+        open_time = time.fromisoformat(settings.booking_open_time)
+        close_time = time.fromisoformat(settings.booking_close_time)
 
         if start_time.time() < open_time or end_time.time() > close_time:
             raise BusinessError("Requested time is outside of working hours")
@@ -134,5 +135,26 @@ class BookingService:
             )
 
     @staticmethod
+    def _ensure_booking_window(start_time: datetime) -> None:
+        if is_past(start_time):
+            raise BusinessError("Booking time cannot be in the past")
+        if not is_within_horizon(start_time, settings.booking_max_days_ahead):
+            raise BusinessError("Booking date is too far in the future")
+        if not is_valid_slot_time(start_time, settings.booking_slot_minutes):
+            raise BusinessError("Booking time must align to the slot minutes")
+
+    @staticmethod
     def _normalize_time(target_time: time) -> time:
         return normalize_time(target_time)
+
+    @classmethod
+    def _build_slot(cls, target_date: date, target_time: time) -> tuple[datetime, datetime]:
+        normalized_time = cls._normalize_time(target_time)
+        local_start = combine_local(target_date, normalized_time)
+        local_end = local_start + timedelta(
+            minutes=settings.booking_duration_minutes
+        )
+        cls._ensure_within_working_hours(local_start, local_end)
+        cls._ensure_same_day(local_start, local_end)
+        cls._ensure_booking_window(local_start)
+        return local_start, local_end

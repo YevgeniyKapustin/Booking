@@ -38,6 +38,7 @@ async def list_available_tables(
     seats: int | None = Query(
         default=None,
         description="Minimum number of seats required.",
+        ge=1,
         examples=[2],
     ),
     _current_user: object = Depends(get_current_user),

@@ -11,9 +11,9 @@ class TableRead(BaseModel):
 
 class TableCreate(BaseModel):
     name: str = Field(examples=["Table 1"])
-    seats: int = Field(examples=[2])
+    seats: int = Field(ge=1, examples=[2])
 
 
 class TableUpdate(BaseModel):
     name: str | None = Field(default=None, examples=["Table 12"])
-    seats: int | None = Field(default=None, examples=[6])
+    seats: int | None = Field(default=None, ge=1, examples=[6])

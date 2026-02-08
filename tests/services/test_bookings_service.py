@@ -5,6 +5,7 @@ from typing import Any, cast
 import pytest
 
 from src.bookings.services import BookingService
+from src.core.config import settings
 from src.core.errors import BusinessError
 
 
@@ -42,3 +43,23 @@ def test_slot_conflict_raises() -> None:
     end_time = datetime(2026, 2, 7, 14, 0, tzinfo=timezone.utc)
     with pytest.raises(BusinessError):
         asyncio.run(service._ensure_slot_available(1, start_time, end_time))
+
+
+def test_booking_window_rejects_past_time() -> None:
+    past_time = datetime.now(timezone.utc) - timedelta(minutes=1)
+    with pytest.raises(BusinessError):
+        BookingService._ensure_booking_window(past_time)
+
+
+def test_booking_window_rejects_far_future() -> None:
+    future_time = datetime.now(timezone.utc) + timedelta(
+        days=settings.booking_max_days_ahead + 1
+    )
+    with pytest.raises(BusinessError):
+        BookingService._ensure_booking_window(future_time)
+
+
+def test_booking_window_rejects_non_slot_minutes() -> None:
+    invalid_time = datetime(2026, 2, 7, 12, 7, tzinfo=timezone.utc)
+    with pytest.raises(BusinessError):
+        BookingService._ensure_booking_window(invalid_time)

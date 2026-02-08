@@ -6,6 +6,11 @@ class Settings(BaseSettings):
 
     app_name: str = "Booking"
     app_timezone: str = "UTC"
+    booking_max_days_ahead: int = 30
+    booking_slot_minutes: int = 15
+    booking_duration_minutes: int = 120
+    booking_open_time: str = "12:00"
+    booking_close_time: str = "22:00"
     database_url: str = ""
     postgres_host: str = "localhost"
     postgres_port: int = 5432
